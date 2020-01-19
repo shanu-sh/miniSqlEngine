@@ -27,31 +27,95 @@ def readmetadata():
     print(tabledata)
 
 def selectall(args):
-    f1=open(args[3]+".csv","r")
-    f2=open("output.txt","w")       
+    f1=open(args[3]+".csv","r")      
     line=f1.readline()
     temp=""
     
     for i in tabledata[args[3]]:
-        temp=temp+args[3]+'.'+i+','
+        temp=temp+args[3]+'.'+i+'\t'
     
     temp=temp[:-1]
     print(temp)
-    temp=temp+'\n'
     while line:
-        print(line.strip())
-        temp=temp+line.strip()+'\n'
+        for j in line.strip().split(','):
+            print(j,end='\t\t')
         line=f1.readline()
-    
-    f2.write(temp)
+        print('\n')
+
+    f1.close()
+
+def crossproduct(table1,table2):
+    f1=open(table1+".csv","r")
+    f2=open(table2+".csv","r")
+
+    list1=f1.readlines()
+    list2=f2.readlines()
+    result=[]
+    for i in list1:
+        for j in list2:
+            y=i.strip().split(',')
+            z=j.strip().split(',')
+            result.append(y+z)
+
     f1.close()
     f2.close()
 
+    return result
+
+def crossproductmany(tables):
+    
+    result=crossproduct(tables[0],tables[1])
+    f1=open("temp.csv","w")
+    for i in result:
+        t=[]
+        for j in i:
+            t.append(j)
+        temp=""
+        for k in t:
+            temp=temp+k+","
+        temp=temp[:-1]
+        f1.write(temp+"\n")
+        
+    f1.close()
+
+    index=2
+    while(index<len(tables)):
+        result=crossproduct("temp",tables[index])
+        index=index+1
+        f1=open("temp.csv","w")
+        for i in result:
+            t=[]
+            for j in i:
+                t.append(j)
+            temp=""
+            for k in t:
+                temp=temp+k+","
+            temp=temp[:-1]
+            f1.write(temp+"\n")
+            
+        f1.close()
+
+    return result
+
+def joinmany(tables):
+    result=crossproductmany(tables)
+    t=""
+    for i in tables:
+        for j in tabledata[i]:
+            t=t+i+"."+j+"\t"
+    print(t)
+
+    for i in result:
+        
+        for j in i:
+            
+            print(j,end="\t\t")
+        print()
+    
 def selectaggregate(args):
     params=args[1].split('(')
     cols=params[1].strip(')').split(',')
-    
-    print(params,cols)
+
     colnum=-1
     data=[]
     flag=False
@@ -62,7 +126,7 @@ def selectaggregate(args):
         for i in tabledata[args[3]]:
             colnum=colnum+1
             if i==cols[0]:
-                print(i)
+                print(args[3]+"."+i)
                 flag=True
                 break
         
@@ -95,7 +159,7 @@ def selectdistinct(t_col,t_table):
     for i in tabledata[t_table]:
         colnum=colnum+1
         if i==t_col[0]:
-            print(i)
+            print(args[3]+"."+i)
             flag=True
             break
     
@@ -107,10 +171,10 @@ def selectdistinct(t_col,t_table):
     print(data)
     f1.close()
 
-def projection(t_cols,t_table):
+def selectonecolumn(t_cols,t_table):
     f1=open(t_table+".csv","r")
     l=f1.readlines()
-    
+    t=""
     colmapping={}
     for i in t_cols:
         colnum=-1
@@ -120,22 +184,47 @@ def projection(t_cols,t_table):
             if(i==j):
                 colmapping[i]=colnum
                 flag=True
+                t=t+t_table+"."+i+"\t"
                 break
         
         if(flag==False):
             print("Column ",i," is not present ")
             return
-
-    data=[]
-
+    print(t)
     for i in l:
         t=""
         for j in t_cols:
-            t=t+i.split(',')[colmapping[j]]+","
-        data.append(t[:-1])
-    
-    print(data)
+            t=t+i.split(',')[colmapping[j]]+"\t\t"
+        print(t)
+
     f1.close()
+
+def selectmanycolums(cols,tables):
+    colmapping={}
+    t=""
+    for i in cols:
+        flag=False
+        colnum=-1
+        for k in tables:
+            if(flag==False):
+                for j in tabledata[k]:
+                    colnum=colnum+1
+                    if(i==j):
+                        colmapping[i]=colnum
+                        flag=True
+                        t=t+k+"."+i+"\t"
+                        break
+
+        if(flag==False):
+            print("Column ",i," is not present ")
+            return
+
+    print(t)
+    result=crossproductmany(tables)
+    for i in result:
+        for j in cols:
+            print(i[colmapping[j]],end="\t\t")
+        print()
 
 def checkoperator(data):
     if("<" in data):
@@ -148,6 +237,10 @@ def checkoperator(data):
         return ">="
     elif("=" in data):
         return "="
+
+
+def joinwithcondition(cols,tables,conditions):
+    
 
 def joincolumns(tables,t_cols,listcond):
     print("Joining columns")
@@ -218,8 +311,11 @@ def processquery(args):
     if(len(args)==4 and args[0]=="select" and args[1]=="*" and len(tables)==1):
         selectall(args)
 
+    elif(len(args)==4 and args[0]=="select" and args[1]=="*" and len(tables)>=2):
+        joinmany(tables)
+
     elif(len(args)==4 and args[0]=="select" and (aggregate=="max" or aggregate=="min" or aggregate=="sum" or aggregate=="average") and len(tables)==1 ):
-            selectaggregate(args)
+        selectaggregate(args)
 
     elif(len(args)==4 and args[0]=="select" and aggregate=="distinct" and len(tables)==1):
         params=args[1].split('(')
@@ -229,10 +325,15 @@ def processquery(args):
         else:
             print("Please specify one column only")
 
+    elif(len(args)==4 and args[0]=="select" and len(tables)>1):
+        params=args[1].split('(')
+        cols=params[0].split(',')
+        selectmanycolums(cols,tables)
+
     elif(len(args)==4 and args[0]=="select" and len(tables)==1):
         params=args[1].split('(')
         cols=params[0].split(',')
-        projection(cols,args[3])
+        selectonecolumn(cols,tables[0])
 
     elif(len(args)==5 and args[0]=="select" and len(tables)==2):
         params=args[1].split('(')
