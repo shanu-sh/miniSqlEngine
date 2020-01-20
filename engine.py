@@ -536,7 +536,46 @@ def joinoneconditionandtablename(cols,tables,conditionlist):
             result.append(i)
     
     printme(cols,tables,result)
-    
+
+def conditionononetable(cols,tables,conditionlist):
+
+    lines=readfile(tables[0]+".csv")
+    table1,column1=splitonoperator(conditionlist[1])[0].split(".")
+    colindex=getindex(table1,column1)
+    print(table1,column1,colindex)
+    val=splitonoperator(conditionlist[1])[1]
+    data=[]
+    for i in lines:
+        if(checkoperator(conditionlist[1],i[colindex],val)):
+            data.append(i)
+
+    printme(cols,tables,data)
+
+def twoconditionononetable(cols,tables,conditionlist):
+    lines=readfile(tables[0]+".csv")
+    table1,column1=splitonoperator(conditionlist[1])[0].split(".")
+    table2,column2=splitonoperator(conditionlist[3])[0].split(".")
+
+    colindex1=getindex(table1,column1)
+    colindex2=getindex(table2,column2)
+
+    print(table1,column1,colindex1)
+
+    val1=splitonoperator(conditionlist[1])[1]
+    val2=splitonoperator(conditionlist[3])[1]
+    data=[]
+    for i in lines:
+        if("AND" in conditionlist[2]):
+            if(checkoperator(conditionlist[1],i[colindex1],val1) and checkoperator(conditionlist[3],i[colindex2],val2)):
+                data.append(i)
+        elif("OR" in conditionlist[2]):
+            if(checkoperator(conditionlist[1],i[colindex1],val1) or checkoperator(conditionlist[3],i[colindex2],val2)):
+                data.append(i)
+        else:
+            print("Operation not supported")
+
+    printme(cols,tables,data)
+
 def processquery(args):
     
     aggregate=args[1].split('(')[0]
@@ -602,6 +641,22 @@ def processquery(args):
         else:
             print("Please specify at least one column")
 
+    elif(len(args)==5 and args[0]=="select" and len(tables)==1):
+        params=args[1].split('(')
+        cols=params[0].split(',')
+        listcond=args[4].split()
+        print(len(listcond))
+        print(params)
+        print('col is ',cols)
+        print(listcond)
+
+        if(len(listcond)==4):
+            twoconditionononetable(cols,tables,listcond)
+
+        elif(len(listcond)==2):
+            conditionononetable(cols,tables,listcond)
+
+        
 input=sys.argv[1]
 '''res=sqlparse.parse(input)
 print(res)
