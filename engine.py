@@ -120,11 +120,19 @@ def selectaggregate(args):
     data=[]
     flag=False
     if(len(cols)==1):
-
+        if("." not in cols[0]):
+            print("Please give proper syntax for column name")
+            return
         l=readfile(args[3]+".csv")
         for i in tabledata[args[3]]:
             colnum=colnum+1
-            if i==cols[0]:
+            print(cols[0])
+            table,column=cols[0].split(".")
+            if(table!=args[3]):
+                print("table name is different")
+                return
+
+            if i==column:
                 print(args[3]+"."+i)
                 flag=True
                 break
@@ -153,10 +161,19 @@ def selectdistinct(t_col,t_table):
     colnum=-1
     flag=False
 
+    if("." not in t_col[0]):
+        print("Please give proper syntax for column name")
+        return
+        
+    table,column=t_col[0].split(".")
+    if(table!=t_table):
+        print("table name is different")
+        return
+    
     for i in tabledata[t_table]:
         colnum=colnum+1
-        if i==t_col[0]:
-            print(args[3]+"."+i)
+        if i==column:
+            print(args[3]+"."+column)
             flag=True
             break
     
@@ -171,64 +188,75 @@ def selectdistinct(t_col,t_table):
 def selectonecolumn(t_cols,t_table):
     l=readfile(t_table+".csv")
     t=""
+
     colmapping={}
     for i in t_cols:
         colnum=-1
         flag=False
+        if("." not in i):
+            print("Please give proper syntax for column name")
+            return
+        
+        table,column=i.split(".")
+        if(table!=t_table):
+            print("table name is different")
+            return
+        
         for j in tabledata[t_table]:
             colnum=colnum+1
-            if(i==j):
-                colmapping[i]=colnum
+            if(column==j):
+                colmapping[column]=colnum
                 flag=True
-                t=t+t_table+"."+i+"\t"
+                t=t+i+","
                 break
         
         if(flag==False):
             print("Column ",i," is not present ")
             return
-    print(t)
+    print(t[:-1])
     for i in l:
         t=""
         for j in t_cols:
-            t=t+i[colmapping[j]]+"\t\t"
-        print(t)
+            table,column=j.split(".")
+            t=t+i[colmapping[column]]+","
+        print(t[:-1])
 
-def selectmanycolums(cols,tables,msg):
+def selectmanycolums(cols,tables):
     colmapping={}
     t=""
     data=[]
     for i in cols:
         flag=False
+        if("." not in i):
+            print("Please give proper syntax for column name")
+            return
+        
+        table,column=i.split(".")
+
         colnum=-1
         for k in tables:
             if(flag==False):
                 for j in tabledata[k]:
                     colnum=colnum+1
-                    if(i==j):
-                        colmapping[i]=colnum
+                    if(column==j and table==k):
+                        colmapping[column]=colnum
                         flag=True
-                        t=t+k+"."+i+"\t"
+                        t=t+k+"."+column+","
                         break
 
         if(flag==False):
             print("Column ",i," is not present ")
             return
-    if(msg):    
-        print(t)
+       
+    print(t[:-1])
     result=crossproductmany(tables)
 
     for i in result:
         temp=""
         for j in cols:
-            if(msg):
-                print(i[colmapping[j]],end="\t\t")
-            temp=temp+i[colmapping[j]]+" "
-            
-        if(msg):
-            print()
-        data.append(temp)
-
-    return data
+            table,column=j.split(".")
+            temp=temp+i[colmapping[column]]+","
+        print(temp[:-1])
 
 def splitonoperator(data):
     if("<=" in data):
@@ -269,7 +297,8 @@ def checkoperator(op,val1,val2):
         else:
             return False
 
-def printme(cols,tables,data):       
+def printme(cols,tables,data):  
+    print("In printme")  
     if(len(cols)==1 and cols[0]=="*"):
         for i in data:
             for j in i:
@@ -279,25 +308,37 @@ def printme(cols,tables,data):
     else:
         colmapping={}
         for i in cols:
+            if("." not in i):
+                print("Please give proper syntax for column name")
+                return
+        
+            table,column=i.split(".")
+            print(table,column)
             flag=False
             colnum=-1
             for k in tables:
                 if(flag==False):
                     for j in tabledata[k]:
                         colnum=colnum+1
-                        if(j==i):
-                            colmapping[i]=colnum
+                        if(j==column and table==k):
+                            colmapping[column]=colnum
                             flag=True
                             break
                 
             if(flag==False):
-                print('Column ',i,' not present')
+                print('Column ',column,' not present')
                 return
+        t=""
+        for i in cols:
+            t=t+i+","
+        print(t[:-1])
 
         for i in data:
+            t=""
             for j in cols:
-                print(i[colmapping[j]],end='\t')
-            print()
+                table,column=j.split(".")
+                t=t+i[colmapping[column]]+","
+            print(t[:-1])
 
 def joinone(cols,tables,conditionlist):
     print("joinone")
@@ -548,7 +589,7 @@ def processquery(args):
     elif(len(args)==4 and args[0]=="select" and len(tables)>1):
         params=args[1].split('(')
         cols=params[0].split(',')
-        selectmanycolums(cols,tables,True)
+        selectmanycolums(cols,tables)
 
     elif(len(args)==4 and args[0]=="select" and len(tables)==1):
         params=args[1].split('(')
