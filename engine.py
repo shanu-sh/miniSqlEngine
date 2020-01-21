@@ -142,13 +142,13 @@ def selectaggregate(args):
             return
         data=[ int(i[colnum]) for i in l]
         
-        if(params[0]=="max"):
+        if(params[0].lower()=="max"):
             print(max(data))
-        elif(params[0]=="min"):
+        elif(params[0].lower()=="min"):
             print(min(data))
-        elif(params[0]=="sum"):
+        elif(params[0].lower()=="sum"):
             print(sum(data))
-        elif(params[0]=="average"):
+        elif(params[0].lower()=="average"):
             print(sum(data)/len(data))
         else:
             print("command not recognized")
@@ -426,9 +426,7 @@ def joinoncondition(cols,tables,conditionlist):
                 print("Column is not present")
                 return
         
-        
         data=[]
-        # print('2',result)
         print(table1,table2)
         print(colindex1,colindex2)
         for t in result:
@@ -565,20 +563,20 @@ def twoconditionononetable(cols,tables,conditionlist):
 
 def processquery(args):
     
-    aggregate=args[1].split('(')[0]
+    aggregate=args[1].split('(')[0].lower()
     tables=args[3].split(',')
 
     print(args)
-    if(len(args)==4 and args[0]=="select" and args[1]=="*" and len(tables)==1):
+    if(len(args)==4 and args[0].lower()=="select" and args[1]=="*" and len(tables)==1):
         selectall(args)
 
-    elif(len(args)==4 and args[0]=="select" and args[1]=="*" and len(tables)>=2):
+    elif(len(args)==4 and args[0].lower()=="select" and args[1]=="*" and len(tables)>=2):
         joinmany(tables)
 
-    elif(len(args)==4 and args[0]=="select" and (aggregate=="max" or aggregate=="min" or aggregate=="sum" or aggregate=="average") and len(tables)==1 ):
+    elif(len(args)==4 and args[0].lower()=="select" and (aggregate=="max" or aggregate=="min" or aggregate=="sum" or aggregate=="average") and len(tables)==1 ):
         selectaggregate(args)
 
-    elif(len(args)==4 and args[0]=="select" and aggregate=="distinct" and len(tables)==1):
+    elif(len(args)==4 and args[0].lower()=="select" and aggregate=="distinct" and len(tables)==1):
         params=args[1].split('(')
         cols=params[1].strip(')').split(',')
         if(len(cols)==1):
@@ -586,17 +584,17 @@ def processquery(args):
         else:
             print("Please specify one column only")
 
-    elif(len(args)==4 and args[0]=="select" and len(tables)>1):
+    elif(len(args)==4 and args[0].lower()=="select" and len(tables)>1):
         params=args[1].split('(')
         cols=params[0].split(',')
         selectmanycolums(cols,tables)
 
-    elif(len(args)==4 and args[0]=="select" and len(tables)==1):
+    elif(len(args)==4 and args[0].lower()=="select" and len(tables)==1):
         params=args[1].split('(')
         cols=params[0].split(',')
         selectonecolumn(cols,tables[0])
 
-    elif(len(args)==5 and args[0]=="select" and len(tables)>=2):
+    elif(len(args)==5 and args[0].lower()=="select" and len(tables)>=2):
         params=args[1].split('(')
         cols=params[0].split(',')
         listcond=args[4].split()
@@ -628,7 +626,7 @@ def processquery(args):
         else:
             print("Please specify at least one column")
 
-    elif(len(args)==5 and args[0]=="select" and len(tables)==1):
+    elif(len(args)==5 and args[0].lower()=="select" and len(tables)==1):
         params=args[1].split('(')
         cols=params[0].split(',')
         listcond=args[4].split()
