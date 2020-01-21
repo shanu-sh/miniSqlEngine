@@ -242,33 +242,6 @@ def splitonoperator(data):
     elif("=" in data):
         return data.split("=")
 
-def operator(data,val): 
-    if("<=" in data):
-        if(int(data.split("<=")[1])>=int(val)):
-            return True
-        else:
-            return False
-    elif("<" in data):
-        if(int(data.split("<")[1])>int(val)):
-            return True
-        else:
-            return False
-    elif(">=" in data):
-        if(int(data.split(">=")[1])<=int(val)):
-            return True
-        else:
-            return False
-    elif(">" in data):
-        if(int(data.split(">")[1])<int(val)):
-            return True
-        else:
-            return False
-    elif("=" in data):
-        if(int(data.split("=")[1])==int(val)):
-            return True
-        else:
-            return False
-
 def checkoperator(op,val1,val2):
     if("<=" in op):
         if(int(val1)<=int(val2)):
@@ -317,7 +290,6 @@ def printme(cols,tables,data):
                             flag=True
                             break
                 
-            
             if(flag==False):
                 print('Column ',i,' not present')
                 return
@@ -334,17 +306,8 @@ def joinone(cols,tables,conditionlist):
     flag=False
     if("." in conditionlist[1]):
 
-        if("=" in conditionlist[1]):
-            table1=conditionlist[1].split('=')[0].split(".")[0]
-            column1=conditionlist[1].split('=')[0].split(".")[1].strip("<").strip(">")
-
-        elif("<" in conditionlist[1]):
-            table1=conditionlist[1].split('<')[0].split(".")[0]
-            column1=conditionlist[1].split('<')[0].split(".")[1]
-
-        elif(">" in conditionlist[1]):
-            table1=conditionlist[1].split('>')[0].split(".")[0]
-            column1=conditionlist[1].split('>')[0].split(".")[1]
+        tabledt1,columnval1=splitonoperator(conditionlist[1])
+        table1,column1=tabledt1.split(".")
 
         print(column1,table1)
         for j in tables:
@@ -364,7 +327,7 @@ def joinone(cols,tables,conditionlist):
 
         data=[]
         for t in result:   
-            if(operator(conditionlist[1],t[colindex1])):
+            if(checkoperator(conditionlist[1],t[colindex1],columnval1)):
                 data.append(t)
 
         printme(cols,tables,data)
@@ -379,19 +342,11 @@ def joinoncondition(cols,tables,conditionlist):
         colindex1=-1
         colindex2=-1
 
+        print(conditionlist[1])
         if("." in conditionlist[1]):
 
-            if("=" in conditionlist[1]):
-                table1=conditionlist[1].split('=')[0].split(".")[0]
-                column1=conditionlist[1].split('=')[0].split(".")[1].strip("<").strip(">")
-
-            elif("<" in conditionlist[1]):
-                table1=conditionlist[1].split('<')[0].split(".")[0]
-                column1=conditionlist[1].split('<')[0].split(".")[1]
-
-            elif(">" in conditionlist[1]):
-                table1=conditionlist[1].split('>')[0].split(".")[0]
-                column1=conditionlist[1].split('>')[0].split(".")[1]
+            tabledt1,columnval1=splitonoperator(conditionlist[1])
+            table1,column1=tabledt1.split(".")
 
             flag=False
             for j in tables:
@@ -410,17 +365,9 @@ def joinoncondition(cols,tables,conditionlist):
                 return
 
         if("." in conditionlist[3]):
-            if("=" in conditionlist[3]):
-                table2=conditionlist[3].split('=')[0].split(".")[0]
-                column2=conditionlist[3].split('=')[0].split(".")[1].strip("<").strip(">")
 
-            elif("<" in conditionlist[3]):
-                table2=conditionlist[3].split('<')[0].split(".")[0]
-                column2=conditionlist[3].split('<')[0].split(".")[1]
-
-            elif(">" in conditionlist[3]):
-                table2=conditionlist[3].split('>')[0].split(".")[0]
-                column2=conditionlist[3].split('>')[0].split(".")[1]
+            tabledt2,columnval2=splitonoperator(conditionlist[3])
+            table2,column2=tabledt2.split(".")
 
             flag=False
             for j in tables:
@@ -429,7 +376,7 @@ def joinoncondition(cols,tables,conditionlist):
                     for i in tabledata[j]:
                         colindex2=colindex2+1
                         print("column is ",i)
-                        if(i==column1 and j==table2):
+                        if(i==column2 and j==table2):
                             print(i,column2,j,table2,colindex2)
                             flag=True
                             break
@@ -446,11 +393,10 @@ def joinoncondition(cols,tables,conditionlist):
         for t in result:
             #print(t)
             if(condition=="AND"):
-                if(operator(conditionlist[1],int(t[colindex1])) and operator(conditionlist[3],int(t[colindex2]))):
-                    print(t[colindex1])
+                if(checkoperator(conditionlist[1],t[colindex1],columnval1) and checkoperator(conditionlist[3],t[colindex2],columnval2)):
                     data.append(t)
             elif(condition=="OR"):
-                if(operator(conditionlist[1],t[colindex1]) or operator(conditionlist[3],t[colindex2])):
+                if(checkoperator(conditionlist[1],t[colindex1],columnval1) or checkoperator(conditionlist[3],t[colindex2],columnval2)):
                     data.append(t)
         
         printme(cols,tables,data)
@@ -670,4 +616,3 @@ for i in t:
 
 readmetadata()
 processquery(args)
-
