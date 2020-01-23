@@ -21,8 +21,13 @@ def getindex(table,column):
         colindex=colindex+1
         if(i==column):
             return colindex
-
     return -1
+
+def checktablepresent(table):
+    for i in tabledata:
+        if(i==table):
+            return True
+    return False
     
 def readmetadata():
     f1=open("metadata.txt","r")
@@ -40,25 +45,46 @@ def readmetadata():
                 i=i+1
             continue
         i=i+1
-    print(tabledata)
     f1.close()
 
-def selectall(args):    
-    line=readfile(args[3]+".csv")
-    temp=""
-    for i in tabledata[args[3]]:
-        temp=temp+args[3]+'.'+i+'\t'
-    
-    temp=temp[:-1]
-    print(temp)
-    
-    for i in line:
-        for j in i:
-            print(j,end='\t\t')
-        print('\n')
+def selectall(args):
+    if(checktablepresent(args[3])):
+        checktablepresent(args[3])
+        line=readfile(args[3]+".csv")
+        temp=""
+        for i in tabledata[args[3]]:
+            temp=temp+args[3]+'.'+i+','
+        
+        temp=temp[:-1]
+        print(temp)
+        
+        for i in line:
+            temp=""
+            for j in i:
+                temp=temp+j+","
+            print(temp[:-1])
+    else:
+        print("table ",args[3]," not present")
 
 def crossproduct(table1,table2):
+    if(checktablepresent(table1)==False):
+        print("table ",table1," not present")
+        return
+    if(checktablepresent(table2)==False):
+        print("table ",table2," not present")
+        return
     list1=readfile(table1+".csv")
+    list2=readfile(table2+".csv")
+    result=[]
+    for i in list1:
+        for j in list2:
+            result.append(i+j)
+    return result
+
+def crossproductwithtable(list1,table2):
+    if(checktablepresent(table2)==False):
+        print("table ",table2," not present")
+        return
     list2=readfile(table2+".csv")
     result=[]
     for i in list1:
@@ -68,49 +94,30 @@ def crossproduct(table1,table2):
 
 def crossproductmany(tables): 
     result=crossproduct(tables[0],tables[1])
-    f1=open("temp.csv","w")
-    for i in result:
-        t=[]
-        for j in i:
-            t.append(j)
-        temp=""
-        for k in t:
-            temp=temp+k+","
-        temp=temp[:-1]
-        f1.write(temp+"\n")    
-    f1.close()
+    if(result is None):
+        return
 
     index=2
     while(index<len(tables)):
-        result=crossproduct("temp",tables[index])
+        result=crossproductwithtable(result,tables[index])
         index=index+1
-        f1=open("temp.csv","w")
-        for i in result:
-            t=[]
-            for j in i:
-                t.append(j)
-            temp=""
-            for k in t:
-                temp=temp+k+","
-            temp=temp[:-1]
-            f1.write(temp+"\n")
-            
-        f1.close()
-
     return result
 
 def joinmany(tables):
     result=crossproductmany(tables)
+    if(result is None):
+        return
     t=""
     for i in tables:
         for j in tabledata[i]:
-            t=t+i+"."+j+"\t"
-    print(t)
+            t=t+i+"."+j+","
+    print(t[:-1])
 
-    for i in result:        
+    for i in result:
+        t=""        
         for j in i:
-            print(j,end="\t\t")
-        print()
+            t=t+j+","
+        print(t[:-1])
     
 def selectaggregate(args):
     params=args[1].split('(')
@@ -123,10 +130,13 @@ def selectaggregate(args):
         if("." not in cols[0]):
             print("Please give proper syntax for column name")
             return
+        if(checktablepresent(args[3])==False):
+            print("table ",args[3]," not present")
+            return
         l=readfile(args[3]+".csv")
         for i in tabledata[args[3]]:
             colnum=colnum+1
-            print(cols[0])
+            # print(cols[0])
             table,column=cols[0].split(".")
             if(table!=args[3]):
                 print("table name is different")
@@ -157,6 +167,11 @@ def selectaggregate(args):
         print('Enter one column only')      
         
 def selectdistinct(t_col,t_table):
+
+    if(checktablepresent(args[3])==False):
+        print("table ",args[3]," not present")
+        return
+
     l=readfile(args[3]+".csv")
     colnum=-1
     flag=False
@@ -186,6 +201,11 @@ def selectdistinct(t_col,t_table):
         print(i)
 
 def selectonecolumn(t_cols,t_table):
+
+    if(checktablepresent(t_table)==False):
+        print("table ",t_table," not present")
+        return
+
     l=readfile(t_table+".csv")
     t=""
 
@@ -251,6 +271,8 @@ def selectmanycolums(cols,tables):
     print(t[:-1])
     result=crossproductmany(tables)
 
+    if( result is None):
+        return
     for i in result:
         temp=""
         for j in cols:
@@ -297,13 +319,16 @@ def checkoperator(op,val1,val2):
         else:
             return False
 
-def printme(cols,tables,data):  
-    print("In printme")  
+def printme(cols,tables,data,head):  
+    if(data is None):
+        return
     if(len(cols)==1 and cols[0]=="*"):
+        print(head)
         for i in data:
+            t=""
             for j in i:
-                print(j,end='\t')
-            print()
+                t=t+j+","
+            print(t[:-1])
 
     else:
         colmapping={}
@@ -313,7 +338,6 @@ def printme(cols,tables,data):
                 return
         
             table,column=i.split(".")
-            print(table,column)
             flag=False
             colnum=-1
             for k in tables:
@@ -341,8 +365,9 @@ def printme(cols,tables,data):
             print(t[:-1])
 
 def joinone(cols,tables,conditionlist):
-    print("joinone")
     result=crossproductmany(tables)
+    if(result is None):
+        return
     colindex1=-1
     flag=False
     if("." in conditionlist[1]):
@@ -350,15 +375,11 @@ def joinone(cols,tables,conditionlist):
         tabledt1,columnval1=splitonoperator(conditionlist[1])
         table1,column1=tabledt1.split(".")
 
-        print(column1,table1)
         for j in tables:
-            print("table is ",j)
             if(flag==False):
                 for i in tabledata[j]:
                     colindex1=colindex1+1
-                    print("column is ",i)
                     if(i==column1 and j==table1):
-                        print(i,column1,j,table1,colindex1)
                         flag=True
                         break
 
@@ -371,19 +392,23 @@ def joinone(cols,tables,conditionlist):
             if(checkoperator(conditionlist[1],t[colindex1],columnval1)):
                 data.append(t)
 
-        printme(cols,tables,data)
+        t=""
+        for i in tables:
+            for j in tabledata[i]:
+                t=t+i+"."+j+","
+
+        printme(cols,tables,data,t[:-1])
 
 
 def joinoncondition(cols,tables,conditionlist):
-    print("join on conditions")
     condition=conditionlist[2]
     if(condition=="AND" or condition=="OR"):
         result=crossproductmany(tables)
-        print(conditionlist)
+        if(result is None):
+            return
         colindex1=-1
         colindex2=-1
 
-        print(conditionlist[1])
         if("." in conditionlist[1]):
 
             tabledt1,columnval1=splitonoperator(conditionlist[1])
@@ -391,13 +416,10 @@ def joinoncondition(cols,tables,conditionlist):
 
             flag=False
             for j in tables:
-                print("table is ",j)
                 if(flag==False):
                     for i in tabledata[j]:
                         colindex1=colindex1+1
-                        print("column is ",i)
                         if(i==column1 and j==table1):
-                            print(i,column1,j,table1,colindex1)
                             flag=True
                             break
 
@@ -412,13 +434,10 @@ def joinoncondition(cols,tables,conditionlist):
 
             flag=False
             for j in tables:
-                print("table is ",j)
                 if(flag==False):
                     for i in tabledata[j]:
                         colindex2=colindex2+1
-                        print("column is ",i)
                         if(i==column2 and j==table2):
-                            print(i,column2,j,table2,colindex2)
                             flag=True
                             break
 
@@ -427,8 +446,6 @@ def joinoncondition(cols,tables,conditionlist):
                 return
         
         data=[]
-        print(table1,table2)
-        print(colindex1,colindex2)
         for t in result:
             #print(t)
             if(condition=="AND"):
@@ -437,66 +454,84 @@ def joinoncondition(cols,tables,conditionlist):
             elif(condition=="OR"):
                 if(checkoperator(conditionlist[1],t[colindex1],columnval1) or checkoperator(conditionlist[3],t[colindex2],columnval2)):
                     data.append(t)
-        
-        printme(cols,tables,data)
+        t=""
+        for i in tables:
+            for j in tabledata[i]:
+                t=t+i+"."+j+","
+        printme(cols,tables,data,t[:-1])
         
 def joinwithtablenameonbothside(cols,tables,conditionlist,msg):
-    print("joinwithtablenameonbothside")
     result=crossproductmany(tables)
-    
+    if(result is None):
+        return
     table1,column1=splitonoperator(conditionlist[1])[0].split(".")
     table2,column2=splitonoperator(conditionlist[1])[1].split(".")
+    if(checktablepresent(table1)==False):
+        print("table ",table1," not present")
+        return
+    if(checktablepresent(table2)==False):
+        print("table ",table2," not present")
+        return
     colindex1=getindex(table1,column1)
     colindex2=getindex(table2,column2)
 
-    print(table1,column1,table2,column2)
-    
     if(int(colindex1)==-1 or int(colindex2)==-1):
         print("column not present")
         return
     data=[]
-    
-    for j in result:
-        colnum=-1
-        t=[]
-       
-        if(checkoperator(conditionlist[1],j[colindex1],j[colindex2+len(tabledata[table1])])):
-            print(j[colindex1],j[colindex2+len(tabledata[table1])])
-            for i in j:
-                colnum=colnum+1
-                if(colnum!=colindex2+len(tabledata[table1])):
-                    t.append(i)
-            data.append(t)
+    colnum=-1
+    head=""
+    if(">=" in conditionlist[1] or ">" in conditionlist[1] or "<=" in conditionlist[1] or "<" in conditionlist[1]):
+        for i in tables:
+            for j in tabledata[i]:
+                head=head+i+"."+j+","
+
+        for j in result:
+            colnum=-1
+            t=[]
+           
+            if(checkoperator(conditionlist[1],j[colindex1],j[colindex2+len(tabledata[table1])])):
+                data.append(j)
+
+    else:
+
+        for j in result:
+            colnum=-1
+            t=[]
+           
+            if(checkoperator(conditionlist[1],j[colindex1],j[colindex2+len(tabledata[table1])])):
+                for i in j:
+                    colnum=colnum+1
+                    if(colnum!=colindex2+len(tabledata[table1])):
+                        t.append(i)
+                data.append(t)
+
+        for i in tables:
+            for j in tabledata[i]:
+                head=head+i+"."+j+","
+  
     if(msg):
-        printme(cols,tables,data)
+        printme(cols,tables,data,head[:-1])
     else:
         t=[]
-        for i in tabledata[table1]:
-            t.append(table1+"."+i)
-        for i in tabledata[table2]:
-            if(i!=column2):
-                t.append(table2+"."+i)
-
-        data.append(t)
+        
+        data.append(head[:-1])
         return data
 
 def joinoneconditionandtablename(cols,tables,conditionlist):
-    print("joinoneconditionandtablename")
-    print(conditionlist[0:2])
     data=joinwithtablenameonbothside(cols,tables,conditionlist[0:2],False)
-
+    if(data is None):
+        return
     head=data[len(data)-1]
     data=data[:-1]
-    print(head)
-    for i in data:
-        print(i)
 
-    print(conditionlist[3])
     tabledt,columnval=splitonoperator(conditionlist[3])
     table,columnname=tabledt.split(".")
-    print(tabledt,columnval)
-    print(table,columnname)
     flag=False
+
+    if(checktablepresent(table)==False):
+        print("table ",table," not present")
+        return
 
     for i in tabledata[table]:
         if(i==columnname):
@@ -508,43 +543,48 @@ def joinoneconditionandtablename(cols,tables,conditionlist):
         return
 
     colindex=-1
-    for i in head:
+    for i in head.split(","):
         colindex=colindex+1
         if(columnname==i.split(".")[1]):
             break
-
-    print(colindex)
 
     result=[]
     for i in data:
         if(checkoperator(conditionlist[3],i[colindex],columnval)):
             result.append(i)
-    
-    printme(cols,tables,result)
+
+    printme(cols,tables,result,head)
 
 def conditionononetable(cols,tables,conditionlist):
+    if(checktablepresent(tables[0])==False):
+        print("table ",tables[0]," not present")
+        return
 
     lines=readfile(tables[0]+".csv")
     table1,column1=splitonoperator(conditionlist[1])[0].split(".")
     colindex=getindex(table1,column1)
-    print(table1,column1,colindex)
     val=splitonoperator(conditionlist[1])[1]
     data=[]
     for i in lines:
         if(checkoperator(conditionlist[1],i[colindex],val)):
             data.append(i)
 
-    printme(cols,tables,data)
+    t=""
+    for i in tabledata[tables[0]]:
+        t=t+tables[0]+"."+i+","
+    printme(cols,tables,data,t[:-1])
 
 def twoconditionononetable(cols,tables,conditionlist):
+    if(checktablepresent(tables[0])==False):
+        print("table ",tables[0]," not present")
+        return
+
     lines=readfile(tables[0]+".csv")
     table1,column1=splitonoperator(conditionlist[1])[0].split(".")
     table2,column2=splitonoperator(conditionlist[3])[0].split(".")
 
     colindex1=getindex(table1,column1)
     colindex2=getindex(table2,column2)
-
-    print(table1,column1,colindex1)
 
     val1=splitonoperator(conditionlist[1])[1]
     val2=splitonoperator(conditionlist[3])[1]
@@ -559,14 +599,18 @@ def twoconditionononetable(cols,tables,conditionlist):
         else:
             print("Operation not supported")
 
-    printme(cols,tables,data)
+    t=""
+    for i in tabledata[tables[0]]:
+        t=t+tables[0]+"."+i+","
+
+    printme(cols,tables,data,t[:-1])
 
 def processquery(args):
     
     aggregate=args[1].split('(')[0].lower()
     tables=args[3].split(',')
 
-    print(args)
+    
     if(len(args)==4 and args[0].lower()=="select" and args[1]=="*" and len(tables)==1):
         selectall(args)
 
@@ -598,25 +642,19 @@ def processquery(args):
         params=args[1].split('(')
         cols=params[0].split(',')
         listcond=args[4].split()
-        print(len(listcond))
-        print(params)
-        print('col is ',cols)
-        print(listcond)
+
         if(len(cols)>=1):
             if(len(listcond)==4):
                 if("." in splitonoperator(listcond[1])[0] and "." in splitonoperator(listcond[1])[1] and 
                     "." in splitonoperator(listcond[3])[0] and "." in splitonoperator(listcond[3])[1] ):
-                    print("TWo cloumns equated")
+                    print("")
 
                 elif("." in splitonoperator(listcond[1])[0] and "." in splitonoperator(listcond[1])[1]):
                     joinoneconditionandtablename(cols,tables,listcond)
                 else:
                     joinoncondition(cols,tables,listcond)
             elif(len(listcond)==2):
-                
-                print(splitonoperator(listcond[1]))
                 if("." in splitonoperator(listcond[1])[0] and "." in splitonoperator(listcond[1])[1]):
-                    print(". on both side")
                     joinwithtablenameonbothside(cols,tables,listcond,True)
                 else:
                     joinone(cols,tables,listcond)
@@ -630,11 +668,7 @@ def processquery(args):
         params=args[1].split('(')
         cols=params[0].split(',')
         listcond=args[4].split()
-        print(len(listcond))
-        print(params)
-        print('col is ',cols)
-        print(listcond)
-
+        
         if(len(listcond)==4):
             twoconditionononetable(cols,tables,listcond)
 
@@ -643,15 +677,17 @@ def processquery(args):
 
         
 input=sys.argv[1]
-'''res=sqlparse.parse(input)
-print(res)
-stmt=res[0]
-print(stmt.tokens)'''
-
 t=sqlparse.sql.IdentifierList(sqlparse.parse(input)[0].tokens).get_identifiers()
 
 for i in t:
     args.append(str(i))
 
-readmetadata()
-processquery(args)
+try:
+    readmetadata()
+except:
+    print("Unable to read meta data")
+
+try:
+    processquery(args)
+except:
+    print("Please give proper syntax")
